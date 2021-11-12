@@ -1,6 +1,6 @@
 # test
 
-A new Flutter project.
+スプラッシュ画面の導入
 
 ## Getting Started
 
