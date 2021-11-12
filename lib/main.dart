@@ -1,16 +1,24 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+// import 'package:provider/provider.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:flutter_native_splash/flutter_native_splash.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
       overlays: [SystemUiOverlay.bottom, SystemUiOverlay.top]);
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
@@ -20,9 +28,9 @@ class MyApp extends StatelessWidget {
           return const MaterialApp(home: Splash());
         } else {
           return MaterialApp(
-            title: 'Flutter Demo',
+            title: 'MyApp',
             theme: ThemeData(primarySwatch: Colors.blue),
-            home: const MyHomePage(title: 'Flutter Demo Home Page'),
+            home: const MyAuthPage(),
           );
         }
       },
@@ -30,16 +38,80 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({Key? key, required String title}) : super(key: key);
+class MyAuthPage extends StatefulWidget {
+  const MyAuthPage({Key? key}) : super(key: key);
+
+  @override
+  _MyAuthPageState createState() => _MyAuthPageState();
+}
+
+class _MyAuthPageState extends State<MyAuthPage> {
+  // 入力されたメールアドレス
+  String newUserEmail = "";
+  // 入力されたパスワード
+  String newUserPassword = "";
+  // 登録・ログインに関する情報を表示
+  String infoText = "";
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Screen transition'),
-      ),
-      body: const Center(
-        child: Text('HOME Page'),
+      body: Center(
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            children: <Widget>[
+              TextFormField(
+                // テキスト入力のラベルを設定
+                decoration: const InputDecoration(labelText: "メールアドレス"),
+                onChanged: (String value) {
+                  setState(() {
+                    newUserEmail = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                decoration: const InputDecoration(labelText: "パスワード（６文字以上）"),
+                // パスワードが見えないようにする
+                obscureText: true,
+                onChanged: (String value) {
+                  setState(() {
+                    newUserPassword = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    // メール/パスワードでユーザー登録
+                    final FirebaseAuth auth = FirebaseAuth.instance;
+                    final UserCredential result =
+                        await auth.createUserWithEmailAndPassword(
+                      email: newUserEmail,
+                      password: newUserPassword,
+                    );
+
+                    // 登録したユーザー情報
+                    final User user = result.user!;
+                    setState(() {
+                      infoText = "登録OK：${user.email}";
+                    });
+                  } catch (e) {
+                    // 登録に失敗した場合
+                    setState(() {
+                      infoText = "登録NG：${e.toString()}";
+                    });
+                  }
+                },
+                child: const Text("ユーザー登録"),
+              ),
+              const SizedBox(height: 8),
+              Text(infoText)
+            ],
+          ),
+        ),
       ),
     );
   }
