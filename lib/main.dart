@@ -100,7 +100,7 @@ class _LoginPageState extends State<LoginPage> {
                     );
                     await Navigator.of(context).pushReplacement(
                       MaterialPageRoute(builder: (context) {
-                        return ChatPage();
+                        return ChatPage(result.user!);
                       }),
                     );
                   } catch (e) {
@@ -118,7 +118,8 @@ class _LoginPageState extends State<LoginPage> {
                   try {
                     // メール/パスワードでログイン
                     final FirebaseAuth auth = FirebaseAuth.instance;
-                    await auth.signInWithEmailAndPassword(
+                    final UserCredential result =
+                        await auth.signInWithEmailAndPassword(
                       email: newUserEmail,
                       password: newUserPassword,
                     );
@@ -126,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                     // チャット画面に遷移＋ログイン画面を破棄
                     await Navigator.of(context).pushReplacement(
                       MaterialPageRoute(builder: (context) {
-                        return ChatPage();
+                        return ChatPage(result.user!);
                       }),
                     );
                   } catch (e) {
@@ -147,6 +148,9 @@ class _LoginPageState extends State<LoginPage> {
 
 // チャット画面用Widget
 class ChatPage extends StatelessWidget {
+  ChatPage(this.user);
+  final User user;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -165,6 +169,10 @@ class ChatPage extends StatelessWidget {
             },
           ),
         ],
+      ),
+      body: Center(
+        // ユーザー情報を表示
+        child: Text('ログイン情報：${user.email}'),
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
