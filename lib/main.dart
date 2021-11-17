@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // import 'package:provider/provider.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 // import 'package:flutter_riverpod/flutter_riverpod.dart';
 // import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 8),
               Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 // メッセージ表示
                 child: Text(infoText),
               ),
@@ -148,22 +148,24 @@ class _LoginPageState extends State<LoginPage> {
 
 // チャット画面用Widget
 class ChatPage extends StatelessWidget {
-  ChatPage(this.user);
+  const ChatPage(this.user, {Key? key}) : super(key: key);
   final User user;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('チャット'),
+        title: const Text('チャット'),
         actions: <Widget>[
           IconButton(
-            icon: Icon(Icons.close),
+            icon: const Icon(Icons.logout),
             onPressed: () async {
+              // ログアウト処理
+              await FirebaseAuth.instance.signOut();
               // ログイン画面に遷移＋チャット画面を破棄
               await Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) {
-                  return LoginPage();
+                  return const LoginPage();
                 }),
               );
             },
@@ -175,12 +177,12 @@ class ChatPage extends StatelessWidget {
         child: Text('ログイン情報：${user.email}'),
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
         onPressed: () async {
           // 投稿画面に遷移
           await Navigator.of(context).push(
             MaterialPageRoute(builder: (context) {
-              return AddPostPage();
+              return AddPostPage(user);
             }),
           );
         },
@@ -190,20 +192,66 @@ class ChatPage extends StatelessWidget {
 }
 
 // 投稿画面用Widget
-class AddPostPage extends StatelessWidget {
+class AddPostPage extends StatefulWidget {
+  const AddPostPage(this.user, {Key? key}) : super(key: key); // 引数からユーザー情報を受け取る
+  final User user; // ユーザー情報
+  @override
+  _AddPostPageState createState() => _AddPostPageState();
+}
+
+class _AddPostPageState extends State<AddPostPage> {
+  // 入力した投稿メッセージ
+  String messageText = '';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('チャット投稿'),
+        title: const Text('チャット投稿'),
       ),
       body: Center(
-        child: ElevatedButton(
-          child: Text('戻る'),
-          onPressed: () {
-            // 1つ前の画面に戻る
-            Navigator.of(context).pop();
-          },
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              // 投稿メッセージ入力
+              TextFormField(
+                decoration: const InputDecoration(labelText: '投稿メッセージ'),
+                // 複数行のテキスト入力
+                keyboardType: TextInputType.multiline,
+                // 最大3行
+                maxLines: 3,
+                onChanged: (String value) {
+                  setState(() {
+                    messageText = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  child: const Text('投稿'),
+                  onPressed: () async {
+                    final date =
+                        DateTime.now().toLocal().toIso8601String(); // 現在の日時
+                    final email = widget.user.email; // AddPostPage のデータを参照
+                    // 投稿メッセージ用ドキュメント作成
+                    await FirebaseFirestore.instance
+                        .collection('posts') // コレクションID指定
+                        .doc() // ドキュメントID自動生成
+                        .set({
+                      'text': messageText,
+                      'email': email,
+                      'date': date
+                    });
+                    // 1つ前の画面に戻る
+                    Navigator.of(context).pop();
+                  },
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );
